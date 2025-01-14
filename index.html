@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+        <link rel="stylesheet" href="css/L.Control.Locate.min.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/MarkerCluster.css">
+        <link rel="stylesheet" href="css/MarkerCluster.Default.css">
+        <link rel="stylesheet" href="css/leaflet-search.css">
+        <link rel="stylesheet" href="css/filter.css">
+<link rel="stylesheet" href="css/nouislider.min.css">
+        <link rel="stylesheet" href="css/leaflet-control-geocoder.Geocoder.css">
+        <link rel="stylesheet" href="css/leaflet-measure.css">
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        </style>
+        <title></title>
+    </head>
+    <body>
+        <div id="map">
+        </div>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/L.Control.Layers.Tree.min.js"></script>
+        <script src="js/L.Control.Locate.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet.wms.js"></script>
+        <script src="js/leaflet-control-geocoder.Geocoder.js"></script>
+        <script src="js/leaflet-measure.js"></script>
+        <script src="js/leaflet.markercluster.js"></script>
+        <script src="js/leaflet-search.js"></script>
+        <script src="js/tailDT.js"></script>
+<script src="js/nouislider.min.js"></script>
+<script src="js/wNumb.js"></script>
+        <script src="data/Volcanesnatural_volcano_3.js"></script>
+        <script src="data/Mundopaises_4.js"></script>
+        <script>
+        var highlightLayer;
+        function highlightFeature(e) {
+            highlightLayer = e.target;
+
+            if (e.target.feature.geometry.type === 'LineString' || e.target.feature.geometry.type === 'MultiLineString') {
+              highlightLayer.setStyle({
+                color: '#ffff00',
+              });
+            } else {
+              highlightLayer.setStyle({
+                fillColor: '#ffff00',
+                fillOpacity: 1
+              });
+            }
+        }
+        var map = L.map('map', {
+            zoomControl:false, maxZoom:28, minZoom:1
+        }).fitBounds([[-81.06166721216586,-177.22483702466212],[75.20728659640812,178.4650287246623]]);
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        // remove popup's row if "visible-with-data"
+        function removeEmptyRowsFromPopupContent(content, feature) {
+         var tempDiv = document.createElement('div');
+         tempDiv.innerHTML = content;
+         var rows = tempDiv.querySelectorAll('tr');
+         for (var i = 0; i < rows.length; i++) {
+             var td = rows[i].querySelector('td.visible-with-data');
+             var key = td ? td.id : '';
+             if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
+                 rows[i].parentNode.removeChild(rows[i]);
+             }
+         }
+         return tempDiv.innerHTML;
+        }
+        // add class to format popup if it contains media
+		function addClassToPopupIfMedia(content, popup) {
+			var tempDiv = document.createElement('div');
+			tempDiv.innerHTML = content;
+			if (tempDiv.querySelector('td img')) {
+				popup._contentNode.classList.add('media');
+					// Delay to force the redraw
+					setTimeout(function() {
+						popup.update();
+					}, 10);
+			} else {
+				popup._contentNode.classList.remove('media');
+			}
+		}
+        var zoomControl = L.control.zoom({
+            position: 'topleft'
+        }).addTo(map);
+        L.control.locate({locateOptions: {maxZoom: 19}}).addTo(map);
+        var measureControl = new L.Control.Measure({
+            position: 'topleft',
+            primaryLengthUnit: 'meters',
+            secondaryLengthUnit: 'kilometers',
+            primaryAreaUnit: 'sqmeters',
+            secondaryAreaUnit: 'hectares'
+        });
+        measureControl.addTo(map);
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].innerHTML = '';
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].className += ' fas fa-ruler';
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+        }
+        map.createPane('pane_GoogleSatellite_0');
+        map.getPane('pane_GoogleSatellite_0').style.zIndex = 400;
+        var layer_GoogleSatellite_0 = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            pane: 'pane_GoogleSatellite_0',
+            opacity: 1.0,
+            attribution: '<a href="https://www.google.at/permissions/geoguidelines/attr-guide.html">Map data ©2015 Google</a>',
+            minZoom: 1,
+            maxZoom: 28,
+            minNativeZoom: 0,
+            maxNativeZoom: 20
+        });
+        layer_GoogleSatellite_0;
+        map.addLayer(layer_GoogleSatellite_0);
+        map.createPane('pane_DarkMatter_1');
+        map.getPane('pane_DarkMatter_1').style.zIndex = 401;
+        var layer_DarkMatter_1 = L.tileLayer('https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
+            pane: 'pane_DarkMatter_1',
+            opacity: 1.0,
+            attribution: '<a href="https://cartodb.com/basemaps/">Map tiles by CartoDB, under CC BY 3.0. Data by OpenStreetMap, under ODbL.</a>',
+            minZoom: 1,
+            maxZoom: 28,
+            minNativeZoom: 0,
+            maxNativeZoom: 20
+        });
+        layer_DarkMatter_1;
+        map.addLayer(layer_DarkMatter_1);
+        map.createPane('pane_GMRTMercatorProjection_2');
+        map.getPane('pane_GMRTMercatorProjection_2').style.zIndex = 402;
+        var layer_GMRTMercatorProjection_2 = L.WMS.layer("https://www.gmrt.org/services/mapserver/wms_merc?version=1.3.0", "topo", {
+            pane: 'pane_GMRTMercatorProjection_2',
+            format: 'image/png',
+            uppercase: true,
+            transparent: true,
+            continuousWorld : true,
+            tiled: true,
+            info_format: 'text/html',
+            opacity: 1,
+            identify: false,
+            attribution: '',
+        });
+        map.addLayer(layer_GMRTMercatorProjection_2);
+        function pop_Volcanesnatural_volcano_3(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['fid'] !== null ? autolinker.link(feature.properties['fid'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['full_id'] !== null ? autolinker.link(feature.properties['full_id'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['osm_id'] !== null ? autolinker.link(feature.properties['osm_id'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['osm_type'] !== null ? autolinker.link(feature.properties['osm_type'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['natural'] !== null ? autolinker.link(feature.properties['natural'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['volcano:type'] !== null ? autolinker.link(feature.properties['volcano:type'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['volcano:status'] !== null ? autolinker.link(feature.properties['volcano:status'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['name'] !== null ? autolinker.link(feature.properties['name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['ele'] !== null ? autolinker.link(feature.properties['ele'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Volcanesnatural_volcano_3_0() {
+            return {
+                pane: 'pane_Volcanesnatural_volcano_3',
+        rotationAngle: 0.0,
+        rotationOrigin: 'center center',
+        icon: L.icon({
+            iconUrl: 'markers/Volcanesnatural_volcano_3.svg',
+            iconSize: [19.0, 19.0]
+        }),
+                interactive: true,
+            }
+        }
+        map.createPane('pane_Volcanesnatural_volcano_3');
+        map.getPane('pane_Volcanesnatural_volcano_3').style.zIndex = 403;
+        map.getPane('pane_Volcanesnatural_volcano_3').style['mix-blend-mode'] = 'normal';
+        var layer_Volcanesnatural_volcano_3 = new L.geoJson(json_Volcanesnatural_volcano_3, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_Volcanesnatural_volcano_3',
+            layerName: 'layer_Volcanesnatural_volcano_3',
+            pane: 'pane_Volcanesnatural_volcano_3',
+            onEachFeature: pop_Volcanesnatural_volcano_3,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.marker(latlng, style_Volcanesnatural_volcano_3_0(feature));
+            },
+        });
+        var cluster_Volcanesnatural_volcano_3 = new L.MarkerClusterGroup({showCoverageOnHover: false,
+            spiderfyDistanceMultiplier: 2});
+        cluster_Volcanesnatural_volcano_3.addLayer(layer_Volcanesnatural_volcano_3);
+
+        bounds_group.addLayer(layer_Volcanesnatural_volcano_3);
+        cluster_Volcanesnatural_volcano_3.addTo(map);
+        function pop_Mundopaises_4(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NAME'] !== null ? autolinker.link(feature.properties['NAME'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Mundopaises_4_0() {
+            return {
+                pane: 'pane_Mundopaises_4',
+                opacity: 1,
+                color: 'rgba(119,116,104,0.6039215686274509)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(224,220,202,0.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_Mundopaises_4');
+        map.getPane('pane_Mundopaises_4').style.zIndex = 404;
+        map.getPane('pane_Mundopaises_4').style['mix-blend-mode'] = 'normal';
+        var layer_Mundopaises_4 = new L.geoJson(json_Mundopaises_4, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_Mundopaises_4',
+            layerName: 'layer_Mundopaises_4',
+            pane: 'pane_Mundopaises_4',
+            onEachFeature: pop_Mundopaises_4,
+            style: style_Mundopaises_4_0,
+        });
+        bounds_group.addLayer(layer_Mundopaises_4);
+        map.addLayer(layer_Mundopaises_4);
+        var osmGeocoder = new L.Control.Geocoder({
+            collapsed: true,
+            position: 'topleft',
+            text: 'Search',
+            title: 'Testing'
+        }).addTo(map);
+        document.getElementsByClassName('leaflet-control-geocoder-icon')[0]
+        .className += ' fa fa-search';
+        document.getElementsByClassName('leaflet-control-geocoder-icon')[0]
+        .title += 'Search for a place';
+        setBounds();
+        map.addControl(new L.Control.Search({
+            layer: layer_Volcanesnatural_volcano_3,
+            initial: false,
+            hideMarkerOnCollapse: true,
+            propertyName: 'volcano:status'}));
+        document.getElementsByClassName('search-button')[0].className +=
+         ' fa fa-binoculars';
+        var mapDiv = document.getElementById('map');
+        var row = document.createElement('div');
+        row.className="row";
+        row.id="all";
+        row.style.height = "100%";
+        var col1 = document.createElement('div');
+        col1.className="col9";
+        col1.id = "mapWindow";
+        col1.style.height = "99%";
+        col1.style.width = "80%";
+        col1.style.display = "inline-block";
+        var col2 = document.createElement('div');
+        col2.className="col3";
+        col2.id = "menu";
+        col2.style.display = "inline-block";
+        mapDiv.parentNode.insertBefore(row, mapDiv);
+        document.getElementById("all").appendChild(col1);
+        document.getElementById("all").appendChild(col2);
+        col1.appendChild(mapDiv)
+        var Filters = {"volcano:type": "str","volcano:status": "str"};
+        function filterFunc() {
+          map.eachLayer(function(lyr){
+          if ("options" in lyr && "dataVar" in lyr["options"]){
+            features = this[lyr["options"]["dataVar"]].features.slice(0);
+            try{
+              for (key in Filters){
+                keyS = key.replace(/[^a-zA-Z0-9_]/g, "")
+                if (Filters[key] == "str" || Filters[key] == "bool"){
+                  var selection = [];
+                  var options = document.getElementById("sel_" + keyS).options
+                  for (var i=0; i < options.length; i++) {
+                    if (options[i].selected) selection.push(options[i].value);
+                  }
+                    try{
+                      if (key in features[0].properties){
+                        for (i = features.length - 1;
+                          i >= 0; --i){
+                          if (selection.indexOf(
+                          features[i].properties[key])<0
+                          && selection.length>0) {
+                          features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                  }
+                }
+                if (Filters[key] == "int"){
+                  sliderVals =  document.getElementById(
+                    "div_" + keyS).noUiSlider.get();
+                  try{
+                    if (key in features[0].properties){
+                    for (i = features.length - 1; i >= 0; --i){
+                      if (parseInt(features[i].properties[key])
+                          < sliderVals[0]
+                          || parseInt(features[i].properties[key])
+                          > sliderVals[1]){
+                            features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                    }
+                  }
+                if (Filters[key] == "real"){
+                  sliderVals =  document.getElementById(
+                    "div_" + keyS).noUiSlider.get();
+                  try{
+                    if (key in features[0].properties){
+                    for (i = features.length - 1; i >= 0; --i){
+                      if (features[i].properties[key]
+                          < sliderVals[0]
+                          || features[i].properties[key]
+                          > sliderVals[1]){
+                            features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                    }
+                  }
+                if (Filters[key] == "date"
+                  || Filters[key] == "datetime"
+                  || Filters[key] == "time"){
+                  try{
+                    if (key in features[0].properties){
+                      HTMLkey = key.replace(/[&\/\\#,+()$~%.'":*?<>{} ]/g, '');
+                      startdate = document.getElementById("dat_" +
+                        HTMLkey + "_date1").value.replace(" ", "T");
+                      enddate = document.getElementById("dat_" +
+                        HTMLkey + "_date2").value.replace(" ", "T");
+                      for (i = features.length - 1; i >= 0; --i){
+                        if (features[i].properties[key] < startdate
+                          || features[i].properties[key] > enddate){
+                          features.splice(i,1);
+                        }
+                      }
+                    }
+                  } catch(err){
+                  }
+                }
+              }
+            } catch(err){
+            }
+          this[lyr["options"]["layerName"]].clearLayers();
+          this[lyr["options"]["layerName"]].addData(features);
+          }
+          })
+        }
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_volcanotype = document.createElement('div');
+            div_volcanotype.id = "div_volcanotype";
+            div_volcanotype.className= "filterselect";
+            document.getElementById("menu").appendChild(div_volcanotype);
+            sel_volcanotype = document.createElement('select');
+            sel_volcanotype.multiple = true;
+            sel_volcanotype.size = 10;
+            sel_volcanotype.id = "sel_volcanotype";
+            var volcanotype_options_str = "<option value='' unselected></option>";
+            sel_volcanotype.onchange = function(){filterFunc()};
+            volcanotype_options_str  += '<option value="NULL">NULL</option>';
+            volcanotype_options_str  += '<option value="Neck">Neck</option>';
+            volcanotype_options_str  += '<option value="Neck basaltique">Neck basaltique</option>';
+            volcanotype_options_str  += '<option value="Pic pyramidal">Pic pyramidal</option>';
+            volcanotype_options_str  += '<option value="Subglacial mound">Subglacial mound</option>';
+            volcanotype_options_str  += '<option value="Suc">Suc</option>';
+            volcanotype_options_str  += '<option value="Volcan de rift">Volcan de rift</option>';
+            volcanotype_options_str  += '<option value="butte">butte</option>';
+            volcanotype_options_str  += '<option value="caldera">caldera</option>';
+            volcanotype_options_str  += '<option value="complex">complex</option>';
+            volcanotype_options_str  += '<option value="cône  strombolien">cône  strombolien</option>';
+            volcanotype_options_str  += '<option value="dirt">dirt</option>';
+            volcanotype_options_str  += '<option value="explosion crater">explosion crater</option>';
+            volcanotype_options_str  += '<option value="fissure">fissure</option>';
+            volcanotype_options_str  += '<option value="lava_dome">lava_dome</option>';
+            volcanotype_options_str  += '<option value="lava_ome">lava_ome</option>';
+            volcanotype_options_str  += '<option value="maar">maar</option>';
+            volcanotype_options_str  += '<option value="marr">marr</option>';
+            volcanotype_options_str  += '<option value="mud">mud</option>';
+            volcanotype_options_str  += '<option value="mud volcano">mud volcano</option>';
+            volcanotype_options_str  += '<option value="mud_volcano">mud_volcano</option>';
+            volcanotype_options_str  += '<option value="neck">neck</option>';
+            volcanotype_options_str  += '<option value="pyroclastic cone">pyroclastic cone</option>';
+            volcanotype_options_str  += '<option value="scoria">scoria</option>';
+            volcanotype_options_str  += '<option value="seamount">seamount</option>';
+            volcanotype_options_str  += '<option value="shield">shield</option>';
+            volcanotype_options_str  += '<option value="somma">somma</option>';
+            volcanotype_options_str  += '<option value="spatter_cone">spatter_cone</option>';
+            volcanotype_options_str  += '<option value="stratovolcano">stratovolcano</option>';
+            volcanotype_options_str  += '<option value="strombolian">strombolian</option>';
+            volcanotype_options_str  += '<option value="subaereal">subaereal</option>';
+            volcanotype_options_str  += '<option value="subglacial mound">subglacial mound</option>';
+            volcanotype_options_str  += '<option value="subglacial_mound">subglacial_mound</option>';
+            volcanotype_options_str  += '<option value="submarine">submarine</option>';
+            volcanotype_options_str  += '<option value="suc">suc</option>';
+            volcanotype_options_str  += '<option value="supervolcano">supervolcano</option>';
+            volcanotype_options_str  += '<option value="surtseyan">surtseyan</option>';
+            volcanotype_options_str  += '<option value="trachytic dome">trachytic dome</option>';
+            volcanotype_options_str  += '<option value="tuff_cone">tuff_cone</option>';
+            volcanotype_options_str  += '<option value="volcan péléen">volcan péléen</option>';
+            volcanotype_options_str  += '<option value="volcanic_plug">volcanic_plug</option>';
+            sel_volcanotype.innerHTML = volcanotype_options_str;
+            div_volcanotype.appendChild(sel_volcanotype);
+            var lab_volcanotype = document.createElement('div');
+            lab_volcanotype.innerHTML = 'volcano:type';
+            lab_volcanotype.className = 'filterlabel';
+            div_volcanotype.appendChild(lab_volcanotype);
+            var reset_volcanotype = document.createElement('div');
+            reset_volcanotype.innerHTML = 'clear filter';
+            reset_volcanotype.className = 'filterlabel';
+            reset_volcanotype.onclick = function() {
+                var options = document.getElementById("sel_volcanotype").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_volcanotype.appendChild(reset_volcanotype);
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_volcanostatus = document.createElement('div');
+            div_volcanostatus.id = "div_volcanostatus";
+            div_volcanostatus.className= "filterselect";
+            document.getElementById("menu").appendChild(div_volcanostatus);
+            sel_volcanostatus = document.createElement('select');
+            sel_volcanostatus.multiple = true;
+            sel_volcanostatus.size = 6;
+            sel_volcanostatus.id = "sel_volcanostatus";
+            var volcanostatus_options_str = "<option value='' unselected></option>";
+            sel_volcanostatus.onchange = function(){filterFunc()};
+            volcanostatus_options_str  += '<option value="NULL">NULL</option>';
+            volcanostatus_options_str  += '<option value="active">active</option>';
+            volcanostatus_options_str  += '<option value="dormant">dormant</option>';
+            volcanostatus_options_str  += '<option value="extinct">extinct</option>';
+            volcanostatus_options_str  += '<option value="inactive">inactive</option>';
+            volcanostatus_options_str  += '<option value="unknown">unknown</option>';
+            sel_volcanostatus.innerHTML = volcanostatus_options_str;
+            div_volcanostatus.appendChild(sel_volcanostatus);
+            var lab_volcanostatus = document.createElement('div');
+            lab_volcanostatus.innerHTML = 'volcano:status';
+            lab_volcanostatus.className = 'filterlabel';
+            div_volcanostatus.appendChild(lab_volcanostatus);
+            var reset_volcanostatus = document.createElement('div');
+            reset_volcanostatus.innerHTML = 'clear filter';
+            reset_volcanostatus.className = 'filterlabel';
+            reset_volcanostatus.onclick = function() {
+                var options = document.getElementById("sel_volcanostatus").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_volcanostatus.appendChild(reset_volcanostatus);
+        </script>
+    </body>
+</html>
